@@ -1,0 +1,86 @@
+---
+version: '2'
+services:
+  plex:
+    image: plexinc/pms-docker
+    container_name: plex
+    volumes:
+      - /opt/appdata/plex:/config
+      - /mnt/storage:/data
+    network_mode: host
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+  nzbget:
+    image: linuxserver/nzbget
+    container_name: nzbget
+    volumes:
+      - /opt/appdata/nzbget/config:/config
+      - /opt/downloads:/downloads
+      - /mnt/disk1/downloads/complete:/downloads/complete
+    ports:
+      - 6789:6789
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    depends_on:
+      - nzbget
+    volumes:
+      - /opt/appdata/sonarr:/config
+      - /mnt/storage/tv:/tv
+      - /mnt/disk1/downloads/complete/tv:/downloads
+    ports:
+      - 8989:8989
+    links:
+      - nzbget
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+  sync:
+    image: linuxserver/resilio-sync
+    container_name: sync
+    volumes:
+      - /opt/appdata/sync:/config
+      - /mnt/storage:/sync
+    ports:
+      - 8888:8888
+      - 55555:55555
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    restart: always
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    volumes:
+      - /opt/appdata/radarr:/config
+      - /mnt/storage/movies:/movies
+      - /mnt/disk1/downloads/complete/movies:/downloads
+    ports:
+      - 7878:7878
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    restart:
+      always
+  gitlab:
+    image: gitlab/gitlab-ee:latest
+    container_name: gitlab
+    ports:
+      - '8080:80'
+      - '2222:22'
+    volumes:
+      - /opt/appdata/gitlab/config:/etc/gitlab
+      - /opt/appdata/gitlab/logs:/var/log/gitlab
+      - /opt/appdata/gitlab/data:/var/opt/gitlab
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    restart:
+      always
